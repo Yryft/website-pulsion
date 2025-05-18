@@ -71,7 +71,7 @@ def jsons():
                 output[item_id] = { 'name': name }
 
     # Save to a single JSON file
-    output_path = 'items.json'
+    output_path = "data/items.json"
     with open(output_path, 'w', encoding='utf-8') as outfile:
         json.dump(output, outfile, indent=4)
 
