@@ -37,7 +37,7 @@ export async function getServerSideProps({ params }) {
     return {
       time: new Date(p.timestamp).toLocaleTimeString(),
       tms,
-      price: Math.round(p.price.sellPrice),
+      price: Math.round(p.price.buyPrice),
       mayor: mayor ? `${mayor.mayor} (${mayor.year})` : null
     };
   });
@@ -81,8 +81,6 @@ export default function ItemPage({ id, prettyName, history, soldData }) {
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, []);
-
-  const isUltimate = id.startsWith("ULTIMATE_");
 
   return (
     <main className="p-8 max-w-7xl mx-auto space-y-8">
@@ -151,7 +149,7 @@ export default function ItemPage({ id, prettyName, history, soldData }) {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={history}
-                margin={{ top: 30, right: 80, left: 0, bottom: 0 }}
+                margin={{ top: 30, right: 80, left: 60, bottom: 0 }}
               >
                 <XAxis
                   dataKey="tms"
@@ -168,22 +166,34 @@ export default function ItemPage({ id, prettyName, history, soldData }) {
                   allowDataOverflow={true}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'var(--tw-bg-opacity, 1)',
-                    color: 'inherit',
-                    borderRadius: '6px',
-                    border: '1px solid #ccc',
-                  }}
-                  labelFormatter={(tms) =>
-                    new Date(tms).toLocaleTimeString()
-                  }
-                  formatter={(value, name, props) => {
-                    const mayor = props.payload.mayor;
-                    const nameWithMayor = mayor ? `${name} — ${mayor}` : name;
-                    return [value.toLocaleString(), nameWithMayor];
-                  }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || payload.length === 0) return null;
 
+                    const { mayor } = payload[0].payload;
+                    const date = new Date(label).toLocaleString(); // Full date + time
+                    const price = payload[0].value.toLocaleString();
+
+                    return (
+                      <div
+                        style={{
+                          backgroundColor: 'var(--tw-bg-opacity, 1)',
+                          color: 'inherit',
+                          borderRadius: '6px',
+                          border: '1px solid #ccc',
+                          padding: '8px',
+                        }}
+                      >
+                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                          {mayor ? `${mayor} — ${date}` : date}
+                        </div>
+                        <div>Price: {price}</div>
+                      </div>
+                    );
+                  }}
                 />
+
+
+
                 <Line dataKey="price" dot={false} stroke="#8884d8" />
               </LineChart>
             </ResponsiveContainer>

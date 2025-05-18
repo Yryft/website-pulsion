@@ -35,7 +35,7 @@ export default function Home({ items }) {
           <li key={id}>
             <Link href={`/items/${id}`}>
               <div className="block p-4 border rounded hover:shadow-sm">
-                {renderNameWithColors(name)}
+                {renderNameWithColors(name, id)}
               </div>
             </Link>
           </li>
