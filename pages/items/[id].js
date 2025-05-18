@@ -9,7 +9,8 @@ import {
 import { useEffect, useState } from "react";
 
 export async function getStaticPaths() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/items`);
+//   const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/items`);
+  const res = await fetch(`https://pulsion-apiv1.up.railway.app/items`);
   const itemIds = await res.json();
 
   const paths = itemIds.map((id) => ({
@@ -21,33 +22,61 @@ export async function getStaticPaths() {
 
 
 export async function getStaticProps({ params }) {
-  const prettyName = getAllItems()
-    .find(i => i.id === params.id).name;
+  const items = await getAllItems(); // await here
+  const item = items.find(i => i.id === params.id);
+
+  if (!item) {
+    return {
+      notFound: true,
+    };
+  }
+
   return {
-    props: { id: params.id, prettyName },
-    revalidate: 60
+    props: {
+      id: item.id,
+      prettyName: item.name,
+    },
+    revalidate: 60,
   };
 }
 
 export default function ItemPage({ id, prettyName }) {
   const [history, setHistory] = useState([]);
   const [soldData, setSoldData] = useState(null);
-  const api = process.env.NEXT_PUBLIC_API_BASE;
+  // const api = process.env.NEXT_PUBLIC_API_BASE;
+  const api = "https://pulsion-apiv1.up.railway.app";
 
   useEffect(() => {
-    axios.get(`${api}/prices/${id}?range=1week`)
-      .then(({ data }) =>
-        setHistory(data.map(p => ({
-          time: new Date(p.timestamp).toLocaleTimeString(),
-          price: p.price
-        })))
-      )
-      .catch(() => setHistory([]));
+  // 1) Fetch price history
+  axios
+    .get(`${api}/prices/${id}?range=all`)
+    .then(({ data }) => {
+      const transformed = data.map(p => ({
+        time: new Date(p.timestamp).toLocaleTimeString(),
+        price: p.price.sellPrice
+      }));
+      console.log("Fetched history:", transformed);
+      setHistory(transformed);
+    })
+    .catch(err => {
+      console.error("Price fetch error:", err);
+      setHistory([]);
+    });
 
-    axios.get(`${api}/sold/${id}?range=1week`)
-      .then(({ data }) => setSoldData(data))
-      .catch(() => setSoldData(null));
-  }, [id]);
+  // 2) Fetch sold volume
+  axios
+    .get(`${api}/sold/${id}?range=all`)
+    .then(({ data }) => {
+      console.log("Fetched sold data:", data);
+      setSoldData(data);
+    })
+    .catch(err => {
+      console.error("Sold fetch error:", err);
+      setSoldData(null);
+    });
+  }, [api, id]);  // <-- exactly one closing brace, one paren, then the deps
+
+
 
   // detect Ultimate enchanted books by internal ID
   const isUltimate = id.startsWith("ULTIMATE_");

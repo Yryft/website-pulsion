@@ -3,7 +3,7 @@ import { getAllItems } from "../lib/items";
 import { renderNameWithColors } from "../lib/renderName";
 
 export async function getStaticProps() {
-  return { props: { items: getAllItems() } };
+  return { props: { items: await getAllItems() } };
 }
 
 export default function Home({ items }) {
@@ -14,7 +14,9 @@ export default function Home({ items }) {
         {items.map(({ id, name }) => (
           <li key={id}>
             <Link href={`/items/${id}`}>
-              <a className="block p-4 border rounded">{renderNameWithColors(name)}</a>
+                <div className="block p-4 border rounded">
+                    {renderNameWithColors(name)}
+                </div>
             </Link>
           </li>
         ))}
