@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getAllItems } from "../lib/items";
-import { renderNameWithColors } from "../../lib/renderName";
+import { renderNameWithColors } from "../lib/renderName";
 
 export async function getStaticProps() {
   return { props: { items: getAllItems() } };
