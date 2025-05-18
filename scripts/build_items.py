@@ -30,29 +30,36 @@ def get_neu_data():
 def jsons():
     # Worker to process individual JSON files
     def process_file(filename):
-        if not filename.endswith('.json'):
-            return None
-        file_path = os.path.join(folder_path, filename)
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        except (json.JSONDecodeError, OSError):
-            print(f"Error decoding or opening JSON in file: {filename}")
-            return None
+      if not filename.endswith('.json'):
+          return None
+      file_path = os.path.join(folder_path, filename)
+      try:
+          with open(file_path, 'r', encoding='utf-8') as f:
+              data = json.load(f)
+      except (json.JSONDecodeError, OSError):
+          print(f"Error decoding or opening JSON in file: {filename}")
+          return None
 
-        item_id = data.get('internalname', '')
-        name = data.get('displayname', '')
-        if not item_id:
-            return None
+      item_id = data.get('internalname', '')
+      name = data.get('displayname', '')
+      if not item_id:
+          return None
 
-        # replace underscores and semicolons with spaces, then title-case
-        if 'Enchanted Book' in name:
-            name = item_id.replace('_', ' ').replace(';', ' ').title()
-            # remove 'Ultimate' except for the special ULTIMATE_WISE book
-            if 'ULTIMATE_WISE' not in item_id:
-                name = name.replace('Ultimate ', '')
+      # If it's an Enchanted Book
+      if 'Enchanted Book' in name:
+          # Rename the ID
+          modified_id = item_id.replace(';', '_')
+          item_id = f"ENCHANTMENT_{modified_id}"
 
-        return item_id, name
+          # Human-readable name
+          name = item_id.replace('_', ' ').replace('ENCHANTMENT ', '').title()
+
+          # Remove 'Ultimate' for all except ULTIMATE_WISE
+          if 'ULTIMATE_WISE' not in item_id:
+              name = name.replace('Ultimate ', '')
+
+      return item_id, name
+
 
     # Use a thread pool to speed up file processing
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
