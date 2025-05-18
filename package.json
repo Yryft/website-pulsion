@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-  "build:items": "python scripts/build_items.py",
+  "build:items": "node scripts/build_items.js",
   "dev":       "npm run build:items && next dev",
   "build":     "npm run build:items && next build",
   "start":     "next start"
