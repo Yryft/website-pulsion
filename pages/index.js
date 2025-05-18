@@ -14,7 +14,7 @@ export default function Home({ items }) {
         {items.map(({ id, name }) => (
           <li key={id}>
             <Link href={`/items/${id}`}>
-              <a className="block p-4 border rounded">{renderNameWithColors(prettyName)}</a>
+              <a className="block p-4 border rounded">{renderNameWithColors(name)}</a>
             </Link>
           </li>
         ))}
