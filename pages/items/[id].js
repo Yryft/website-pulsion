@@ -1,4 +1,5 @@
 import { getAllItems } from "../../lib/items";
+import { renderNameWithColors } from "../../lib/renderName";
 import axios from "axios";
 import {
   ResponsiveContainer,
@@ -10,14 +11,14 @@ import { useEffect, useState } from "react";
 export async function getStaticPaths() {
   const items = getAllItems();
   return {
-    paths: items.map(item => ({ params: { id: item.id } })),
+    paths: items.map(({ id }) => ({ params: { id } })),
     fallback: false
   };
 }
 
 export async function getStaticProps({ params }) {
-  // Preload the pretty name at build time
-  const prettyName = getAllItems().find(i => i.id === params.id).name;
+  const prettyName = getAllItems()
+    .find(i => i.id === params.id).name;
   return {
     props: { id: params.id, prettyName },
     revalidate: 60
@@ -30,54 +31,59 @@ export default function ItemPage({ id, prettyName }) {
   const api = process.env.NEXT_PUBLIC_API_BASE;
 
   useEffect(() => {
-    // 1) Fetch time-series prices
-    axios
-      .get(`${api}/prices/${id}?range=1week`)
-      .then(res => {
-        setHistory(res.data.map(p => ({
+    axios.get(`${api}/prices/${id}?range=1week`)
+      .then(({ data }) =>
+        setHistory(data.map(p => ({
           time: new Date(p.timestamp).toLocaleTimeString(),
           price: p.price
-        })));
-      })
-      .catch(() => {
-        setHistory([]);
-      });
+        })))
+      )
+      .catch(() => setHistory([]));
 
-    // 2) Fetch sold volume over the same period
-    axios
-      .get(`${api}/sold/${id}?range=1week`)
-      .then(res => {
-        setSoldData(res.data);
-      })
-      .catch(() => {
-        setSoldData(null);
-      });
+    axios.get(`${api}/sold/${id}?range=1week`)
+      .then(({ data }) => setSoldData(data))
+      .catch(() => setSoldData(null));
   }, [id]);
+
+  // detect Ultimate enchanted books by internal ID
+  const isUltimate = id.startsWith("ULTIMATE_");
 
   return (
     <main className="p-8 max-w-3xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold">{prettyName}</h1>
+      <h1
+        className={`text-2xl font-bold ${
+          isUltimate ? "text-pink-500" : ""
+        }`}
+      >
+        {isUltimate
+          ? prettyName
+          : renderNameWithColors(prettyName)
+        }
+      </h1>
 
-      {/* Price history chart */}
       <section>
         <h2 className="text-xl mb-2">Price History (last 7 days)</h2>
         <ResponsiveContainer width="100%" height={250}>
           <LineChart data={history}>
-            <XAxis dataKey="time" />
-            <YAxis domain={['auto','auto']} />
+            <XAxis dataKey="time" stroke="#8884d8" />
+            <YAxis stroke="#8884d8" domain={['auto','auto']} />
             <Tooltip />
-            <Line dataKey="price" dot={false} />
+            <Line
+              dataKey="price"
+              dot={false}
+              stroke="#8884d8"
+            />
           </LineChart>
         </ResponsiveContainer>
       </section>
 
-      {/* Sold volume summary */}
       {soldData && (
         <section>
           <h2 className="text-xl mb-2">Sold Volume (last 7 days)</h2>
-          <p className="text-lg">
-            {soldData.sold.toLocaleString()} units sold from{' '}
-            {new Date(soldData.from).toLocaleDateString()} to{' '}
+          <p>
+            <strong>{soldData.sold.toLocaleString()}</strong>{" "}
+            units sold from{" "}
+            {new Date(soldData.from).toLocaleDateString()} to{" "}
             {new Date(soldData.to).toLocaleDateString()}.
           </p>
         </section>
