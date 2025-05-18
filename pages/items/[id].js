@@ -9,12 +9,16 @@ import {
 import { useEffect, useState } from "react";
 
 export async function getStaticPaths() {
-  const items = getAllItems();
-  return {
-    paths: items.map(({ id }) => ({ params: { id } })),
-    fallback: false
-  };
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/items`);
+  const itemIds = await res.json();
+
+  const paths = itemIds.map((id) => ({
+    params: { id },
+  }));
+
+  return { paths, fallback: false };
 }
+
 
 export async function getStaticProps({ params }) {
   const prettyName = getAllItems()

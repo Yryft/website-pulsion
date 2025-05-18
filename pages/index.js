@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAllItems } from "../lib/items";
+import { renderNameWithColors } from "../../lib/renderName";
 
 export async function getStaticProps() {
   return { props: { items: getAllItems() } };
@@ -13,7 +14,7 @@ export default function Home({ items }) {
         {items.map(({ id, name }) => (
           <li key={id}>
             <Link href={`/items/${id}`}>
-              <a className="block p-4 border rounded">{name}</a>
+              <a className="block p-4 border rounded">{renderNameWithColors(prettyName)}</a>
             </Link>
           </li>
         ))}
