@@ -2,8 +2,8 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useState } from "react";
-import { getAllItems } from "../lib/items";
-import { renderNameWithColors } from "../lib/renderName";
+import { getAllItems } from "../../lib/items";
+import { renderNameWithColors } from "../../lib/renderName";
 
 export async function getStaticProps() {
   const items = await getAllItems();
