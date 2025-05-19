@@ -202,19 +202,39 @@ useEffect(() => {
           <label htmlFor="range" className="font-semibold">
             Select range
           </label>
-          <select
-            id="range"
-            value={range}
-            onChange={(e) => setRange(e.target.value)}
-            className="border p-2 rounded dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
-          >
-            {ranges.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
+
+          <div className="relative">
+            <select
+              id="range"
+              value={range}
+              onChange={(e) => setRange(e.target.value)}
+              className="appearance-none border p-2 rounded pr-8
+                        dark:bg-gray-800 dark:text-white dark:placeholder-gray-400
+                        border-gray-300 dark:border-gray-600"
+            >
+              {ranges.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+
+            {/* Custom arrow */}
+            <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-700 dark:text-gray-300">
+              <svg
+                className="w-4 h-4"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
         </div>
+
 
         {/* Price Chart */}
         <section className="w-full overflow-x-auto">
@@ -253,7 +273,6 @@ useEffect(() => {
                 <Area type="monotone" dataKey="data.sellPrice" name="Sell Price" stroke="#8884d8" fill="url(#colorSell)" />
                 
                 {mayors.map((mayor, index) => (
-                  console.log(new Date(mayor.timestamp).getTime()),
                 <ReferenceLine
                   key={index}
                   x={formatDate(mayor.timestamp)}

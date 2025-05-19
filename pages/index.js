@@ -116,10 +116,10 @@ export default function Home({ items = [], topItems = [] }) {
                         {renderNameWithColors(pretty, item_id)}
                       </Link>
                       <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        Sell @ {sell_price.toLocaleString()}, Buy @ {buy_price.toLocaleString()}
+                        Sell price: <i><b>{Math.round(sell_price).toLocaleString()}</b></i> / Buy price: <i><b>{Math.round(buy_price).toLocaleString()}</b></i>
                       </div>
                       <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        Weekly Vol: {weekly_volume.toLocaleString()}, Top-Of-Book Depth: {max_units}
+                        Weekly Vol: <i><b>{weekly_volume.toLocaleString()}</b></i>
                       </div>
                       <div className="mt-2 font-bold">
                         Profit: {profit_estimate.toLocaleString(undefined, { maximumFractionDigits: 0 })}{" "}

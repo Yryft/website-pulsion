@@ -37,16 +37,22 @@ export default function MiniChart({ itemId }) {
             label: 'Sell Price',
             data: vals,
             fill: false,
-            borderWidth: 1,
-            borderColor: 'rgb(75,192,192)',       // contrasting teal
-            pointBackgroundColor: 'rgb(75,192,192)' // same for dots
+            tension: 0.4,           // <— smooth bezier curves
+            borderWidth: 2,         // a bit thicker for clarity
+            borderColor: 'rgb(75,192,192)',
+            pointRadius: 0,         // hide the individual dots
+            pointHoverRadius: 3,    // but show a dot on hover
+            pointBackgroundColor: 'rgb(75,192,192)'
           },
           {
             label: 'Buy Price',
             data: rows.map(r => r.data.buyPrice),
             fill: false,
-            borderWidth: 1,
+            tension: 0.4,
+            borderWidth: 2,
             borderColor: 'rgb(255,99,132)',       // contrasting red
+            pointRadius: 0,
+            pointHoverRadius: 3,
             pointBackgroundColor: 'rgb(255,99,132)' // same for dots
           }]
         });
@@ -61,13 +67,32 @@ export default function MiniChart({ itemId }) {
       <Line
         data={data}
         options={{
-          plugins: { legend: { display: false } },
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                font: {
+                  size: 12        // smaller font
+                },
+                boxWidth: 2,     // smaller color box
+                boxHeight: 2,    // match boxWidth if you like
+                padding: 12        // space between legend items
+              }
+            }
+          },
           responsive: true,
           scales: {
             x: { display: false },
             y: { display: false }
           },
-          animation: false
+          animation: false, 
+          elements: {
+            line: {
+              borderJoinStyle: 'round',
+              borderCapStyle: 'round',
+            }
+          }
+
         }}
       />
     </div>
