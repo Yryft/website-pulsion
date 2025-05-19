@@ -10,8 +10,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ReferenceLine,
-  Label
 } from "recharts";
 import { useEffect, useState, useRef } from "react";
 import Head from "next/head";
@@ -19,43 +17,33 @@ import Head from "next/head";
 export async function getServerSideProps({ params }) {
   const base = process.env.API_BASE || "https://pulsion-apiv1.up.railway.app";
 
-  // get the pretty name from your items.json
   const items = await getAllItems();
-  const item = items.find(i => i.id === params.id);
+  const item  = items.find(i => i.id === params.id);
   if (!item) return { notFound: true };
 
-  // fetch full price history (all time)
   const [pricesRes, soldRes, electionsRes] = await Promise.all([
     fetch(`${base}/prices/${params.id}?range=all`),
     fetch(`${base}/sold/${params.id}`),
     fetch(`${base}/elections?range=all`)
   ]);
 
-  const historyRaw = pricesRes.ok ? await pricesRes.json() : [];
-  const soldData   = soldRes.ok   ? await soldRes.json()   : null;
-  const elections  = electionsRes.ok ? await electionsRes.json() : [];
+  const historyRaw  = pricesRes.ok   ? await pricesRes.json() : [];
+  const soldData    = soldRes.ok     ? await soldRes.json()   : null;
+  const elections   = electionsRes.ok? await electionsRes.json(): [];
 
-  // remap history to your recharts format
   const history = historyRaw.map(p => {
-    const tms = new Date(p.timestamp).getTime();
+    const tms   = new Date(p.timestamp).getTime();
     const mayor = elections
       .slice().reverse()
       .find(e => new Date(e.timestamp).getTime() <= tms);
 
     return {
-      time: new Date(p.timestamp).toLocaleTimeString(),
+      time:  new Date(p.timestamp).toLocaleTimeString(),
       tms,
-      // show sellPrice over time
-      price: Math.round(p.data.buyPrice),
+      price: Math.round(p.data.sellPrice),
       mayor: mayor ? `${mayor.mayor} (${mayor.year})` : null
     };
   });
-
-  // election lines remain unchanged
-  const electionLines = elections.map(e => ({
-    tms: new Date(e.timestamp).getTime(),
-    label: `${e.mayor} (${e.year})`
-  }));
 
   return {
     props: {
@@ -63,19 +51,18 @@ export async function getServerSideProps({ params }) {
       prettyName: item.name,
       history,
       soldData,
-      electionLines
     }
   };
 }
 
-export default function ItemPage({ id, prettyName, history, soldData, electionLines }) {
+export default function ItemPage({ id, prettyName, history, soldData }) {
   const router = useRouter();
 
-  // Autocomplete state (unchanged)
-  const [query, setQuery]     = useState("");
+  // Autocomplete state
+  const [query, setQuery]       = useState("");
   const [allItems, setAllItems] = useState([]);
-  const [open, setOpen]       = useState(false);
-  const inputRef              = useRef();
+  const [open, setOpen]         = useState(false);
+  const inputRef                = useRef();
 
   useEffect(() => {
     getAllItems().then(setAllItems);
@@ -90,129 +77,123 @@ export default function ItemPage({ id, prettyName, history, soldData, electionLi
     : [];
 
   useEffect(() => {
-    function handler(e) {
+    function onClickOutside(e) {
       if (inputRef.current && !inputRef.current.contains(e.target)) {
         setOpen(false);
       }
     }
-    document.addEventListener("click", handler);
-    return () => document.removeEventListener("click", handler);
+    document.addEventListener("click", onClickOutside);
+    return () => document.removeEventListener("click", onClickOutside);
   }, []);
 
   return (
     <>
-    <Head>
-      <title>{prettyName} | Bazaar Tracker</title>
-      <link rel="icon" href="/favicon.ico" />
-    </Head>
-    <main className="p-8 max-w-7xl mx-auto space-y-8">
-      {/* Autocomplete */}
-      <div className="relative" ref={inputRef}>
-        <input
-          type="text"
-          value={query}
-          onFocus={() => setOpen(true)}
-          onChange={e => {
-            setQuery(e.target.value);
-            setOpen(true);
-          }}
-          placeholder="Search items…"
-          className="w-full p-2 border rounded"
-        />
-        {open && suggestions.length > 0 && (
-          <ul className="absolute z-10 mt-1 w-full border rounded shadow max-h-60 overflow-auto bg-white">
-            {suggestions.map(({ id, name }) => (
-              <li
-                key={id}
-                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                onClick={() => {
-                  setOpen(false);
-                  router.push(`/items/${id}`);
-                }}
-              >
-                {renderNameWithColors(name, id)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Back */}
-      <Link href="/" className="inline-block mb-4 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300">
-        ← Back to Home
-      </Link>
-
-      {/* Title */}
-      <h1 className="text-2xl font-bold">
-        {renderNameWithColors(prettyName, id)}
-      </h1>
-
-      {/* Price Chart */}
-      <section className="w-full overflow-x-auto">
-        <h2 className="text-xl mb-2">Price History</h2>
-        {history.length > 0 ? (
-          <div className="min-w-[1000px] h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={history} margin={{ top: 30, right: 80, left: 60, bottom: 0 }}>
-                <XAxis
-                  dataKey="tms"
-                  type="number"
-                  domain={['auto', 'auto']}
-                  tickFormatter={t => new Date(t).toLocaleTimeString()}
-                />
-                <YAxis
-                  tickFormatter={v => v.toLocaleString()}
-                  allowDataOverflow
-                />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (!active || !payload?.length) return null;
-                    const { mayor } = payload[0].payload;
-                    const date = new Date(label).toLocaleString();
-                    const price = payload[0].value.toLocaleString();
-                    return (
-                      <div style={{ padding: 8, background: '#fff', border: '1px solid #ccc' }}>
-                        <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
-                          {mayor ? `${mayor} — ${date}` : date}
-                        </div>
-                        <div>Price: {price}</div>
-                      </div>
-                    );
+      <Head>
+        <title>{prettyName} | Bazaar Tracker</title>
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      <main className="p-8 max-w-7xl mx-auto space-y-8">
+        {/* Autocomplete */}
+        <div className="relative" ref={inputRef}>
+          <input
+            type="text"
+            value={query}
+            onFocus={() => setOpen(true)}
+            onChange={e => { setQuery(e.target.value); setOpen(true); }}
+            placeholder="Search items…"
+            className="w-full p-2 border rounded bg-white text-black placeholder-gray-500 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
+          />
+          {open && suggestions.length > 0 && (
+            <ul className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow max-h-60 overflow-auto">
+              {suggestions.map(({ id, name }) => (
+                <li
+                  key={id}
+                  className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                  onClick={() => {
+                    setOpen(false);
+                    router.push(`/items/${id}`);
                   }}
-                />
-                {/** Your historical price line **/}
-                <Line dataKey="price" dot={false} stroke="#8884d8" />
+                >
+                  {renderNameWithColors(name, id)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
-                {/** Election reference lines (optional) **/}
-                {electionLines.map((e, i) => (
-                  <ReferenceLine
-                    key={i}
-                    x={e.tms}
-                    label={<Label position="top" value={e.label} />}
-                    stroke="#FF0000"
+        {/* Back */}
+        <Link href="/">
+          <a className="inline-block mb-4 px-3 py-1 rounded bg-gray-200 text-black hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+            ← Back to Home
+          </a>
+        </Link>
+
+        {/* Title */}
+        <h1 className="text-2xl font-bold">
+          {renderNameWithColors(prettyName, id)}
+        </h1>
+
+        {/* Price Chart */}
+        <section className="w-full overflow-x-auto">
+          <h2 className="text-xl mb-2">Price History</h2>
+          {history.length > 0 ? (
+            <div className="min-w-[1000px] h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={history}
+                  margin={{ top: 30, right: 80, left: 60, bottom: 0 }}
+                >
+                  <XAxis
+                    dataKey="tms"
+                    type="number"
+                    domain={['auto','auto']}
+                    tickFormatter={t => new Date(t).toLocaleTimeString()}
                   />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p>No price history available.</p>
-        )}
-      </section>
+                  <YAxis
+                    tickFormatter={v => v.toLocaleString()}
+                    allowDataOverflow
+                  />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const { mayor } = payload[0].payload;
+                      const date  = new Date(label).toLocaleString();
+                      const price = payload[0].value.toLocaleString();
+                      return (
+                        <div className="bg-white text-black p-2 border dark:bg-gray-800 dark:text-white dark:border-gray-600 rounded">
+                          <div className="font-bold mb-1">
+                            {mayor ? `${mayor} — ${date}` : date}
+                          </div>
+                          <div>Price: {price}</div>
+                        </div>
+                      );
+                    }}
+                  />
+                  {/* historical price line */}
+                  <Line dataKey="price" dot={false} stroke="#8884d8" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p>No price history available.</p>
+          )}
+        </section>
 
-      {/* Sold volume */}
-      <section>
-        <h2 className="text-xl mb-2">Sold Volume (latest)</h2>
-        {soldData ? (
-          <p>
-            <strong>{soldData.sellMovingWeek.toLocaleString()}</strong> units sold.{" "}
-            <small>(as of {new Date(soldData.timestamp).toLocaleTimeString()})</small>
-          </p>
-        ) : (
-          <p>No sold-volume data available.</p>
-        )}
-      </section>
-    </main>
+        {/* Sold volume */}
+        <section>
+          <h2 className="text-xl mb-2">Sold Volume (latest)</h2>
+          {soldData ? (
+            <p>
+              <strong>{soldData.sellMovingWeek.toLocaleString()}</strong> units sold.{" "}
+              <small className="text-gray-500 dark:text-gray-400">
+                (as of {new Date(soldData.timestamp).toLocaleTimeString()})
+              </small>
+            </p>
+          ) : (
+            <p>No sold-volume data available.</p>
+          )}
+        </section>
+      </main>
     </>
   );
 }
