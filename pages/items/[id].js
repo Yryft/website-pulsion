@@ -9,6 +9,7 @@ import {
   XAxis, YAxis, Tooltip
 } from "recharts";
 import { useEffect, useState, useRef } from "react";
+import Head from "next/head";
 
 export async function getServerSideProps({ params }) {
   const base = process.env.API_BASE || "https://pulsion-apiv1.up.railway.app";
@@ -94,6 +95,11 @@ export default function ItemPage({ id, prettyName, history, soldData, electionLi
   }, []);
 
   return (
+    <>
+    <Head>
+      <title>{prettyName} | Bazaar Tracker</title>
+      <link rel="icon" href="/favicon.ico" />
+    </Head>
     <main className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Autocomplete */}
       <div className="relative" ref={inputRef}>
@@ -202,5 +208,6 @@ export default function ItemPage({ id, prettyName, history, soldData, electionLi
         )}
       </section>
     </main>
+    </>
   );
 }

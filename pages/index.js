@@ -2,8 +2,8 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
-import { getAllItems } from "../../lib/items";
-import { renderNameWithColors } from "../../lib/renderName";
+import { getAllItems } from "../lib/items";
+import { renderNameWithColors } from "../lib/renderName";
 import MiniChart from "../components/MiniChart";
 
 export async function getStaticProps() {
