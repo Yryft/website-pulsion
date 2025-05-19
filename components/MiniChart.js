@@ -37,7 +37,9 @@ export default function MiniChart({ itemId }) {
             label: 'Sell Price',
             data: vals,
             fill: false,
-            borderWidth: 1
+            borderWidth: 1,
+            borderColor: 'rgb(75,192,192)',       // contrasting teal
+            pointBackgroundColor: 'rgb(75,192,192)' // same for dots
           }]
         });
       })
@@ -47,7 +49,7 @@ export default function MiniChart({ itemId }) {
   if (!data) return <div className="text-sm text-gray-500">No data</div>;
 
   return (
-    <div className="h-24 w-full">  {/* 2) Explicit tiny height */}
+    <div className="h-24 w-full bg-white dark:bg-gray-800 rounded">
       <Line
         data={data}
         options={{

@@ -15,7 +15,7 @@ import { useEffect, useState, useRef } from "react";
 import Head from "next/head";
 
 export async function getServerSideProps({ params }) {
-  const base = process.env.API_BASE || "https://pulsion-apiv1.up.railway.app";
+  const base = process.env.NEXT_PUBLIC_API_BASE;
 
   const items = await getAllItems();
   const item  = items.find(i => i.id === params.id);
@@ -89,7 +89,7 @@ export default function ItemPage({ id, prettyName, history, soldData }) {
   return (
     <>
       <Head>
-        <title>{prettyName} | Bazaar Tracker</title>
+        <title>{prettyName.replace(/§[0-9a-fA-F]/g, '')} | Bazaar Tracker</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="p-8 max-w-7xl mx-auto space-y-8">
@@ -181,12 +181,12 @@ export default function ItemPage({ id, prettyName, history, soldData }) {
 
         {/* Sold volume */}
         <section>
-          <h2 className="text-xl mb-2">Sold Volume (latest)</h2>
+          <h2 className="text-xl mb-2">Sold Volume</h2>
           {soldData ? (
             <p>
               <strong>{soldData.sellMovingWeek.toLocaleString()}</strong> units sold.{" "}
               <small className="text-gray-500 dark:text-gray-400">
-                (as of {new Date(soldData.timestamp).toLocaleTimeString()})
+                (as of the latest fetched data)
               </small>
             </p>
           ) : (
