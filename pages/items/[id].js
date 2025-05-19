@@ -16,8 +16,9 @@ import {
   Legend,
 } from "recharts";
 
+const base = process.env.NEXT_PUBLIC_API_BASE;
+
 export async function getServerSideProps({ params }) {
-  const base = process.env.NEXT_PUBLIC_API_BASE;
   const items = await getAllItems();
   const item = items.find((i) => i.id === params.id);
   if (!item) return { notFound: true };
