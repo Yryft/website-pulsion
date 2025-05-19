@@ -7,7 +7,7 @@ import { renderNameWithColors } from "../lib/renderName";
 import MiniChart from "../components/MiniChart";
 
 export async function getStaticProps() {
-  const base = process.env.NEXT_PUBLIC_API_BASE;
+  const base = process.env.NEXT_PUBLIC_API_BASE || "https://pulsion-apiv1.up.railway.app";
   // 1) full catalog for names & autocomplete
   const items = await getAllItems(); // [{ id, name }, …]
 
@@ -112,10 +112,8 @@ export default function Home({ items = [], topItems = [] }) {
                   const pretty = nameObj ? nameObj.name : item_id;
                   return (
                     <li key={item_id} className="border p-4 rounded">
-                      <Link href={`/items/${item_id}`}>
-                        <a className="font-semibold hover:underline">
-                          {renderNameWithColors(pretty, item_id)}
-                        </a>
+                      <Link href={`/items/${item_id}`} className="font-semibold hover:underline">
+                        {renderNameWithColors(pretty, item_id)}
                       </Link>
                       <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                         Sell @ {sell_price.toLocaleString()}, Buy @ {buy_price.toLocaleString()}

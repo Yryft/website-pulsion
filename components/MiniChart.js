@@ -23,7 +23,7 @@ ChartJS.register(
 
 export default function MiniChart({ itemId }) {
   const [data, setData] = useState(null);
-  const base = process.env.NEXT_PUBLIC_API_BASE;
+  const base = process.env.NEXT_PUBLIC_API_BASE || "https://pulsion-apiv1.up.railway.app";
 
   useEffect(() => {
     fetch(`${base}/prices/${itemId}`)
@@ -40,6 +40,14 @@ export default function MiniChart({ itemId }) {
             borderWidth: 1,
             borderColor: 'rgb(75,192,192)',       // contrasting teal
             pointBackgroundColor: 'rgb(75,192,192)' // same for dots
+          },
+          {
+            label: 'Buy Price',
+            data: rows.map(r => r.data.buyPrice),
+            fill: false,
+            borderWidth: 1,
+            borderColor: 'rgb(255,99,132)',       // contrasting red
+            pointBackgroundColor: 'rgb(255,99,132)' // same for dots
           }]
         });
       })

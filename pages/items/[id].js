@@ -14,9 +14,11 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  ReferenceLine
 } from "recharts";
 
-const base = process.env.NEXT_PUBLIC_API_BASE;
+
+const base = process.env.NEXT_PUBLIC_API_BASE || "https://pulsion-apiv1.up.railway.app";
 
 export async function getServerSideProps({ params }) {
   const items = await getAllItems();
@@ -44,6 +46,15 @@ const ranges = [
   { label: "All Time", value: "all" },
 ];
 
+function formatDate(ts) {
+  const date = new Date(ts);
+  return date.getDate().toString().padStart(2, '0') + " " +
+         date.toLocaleString('en-US', { month: 'short' }) + " " +
+         date.getFullYear() + ", " +
+         String(date.getHours()).padStart(2, '0') + ":" +
+         String(date.getMinutes()).padStart(2, '0');
+}
+
 export default function ItemPage({ id, prettyName, soldData }) {
   const router = useRouter();
 
@@ -55,7 +66,9 @@ export default function ItemPage({ id, prettyName, soldData }) {
 
   const [priceData, setPriceData] = useState([]);
   const [range, setRange] = useState("1week");
-  const [budget, setBudget] = useState(1000000);
+  const [budget, setBudget] = useState(100000000);
+  const [budgetInput, setBudgetInput] = useState(budget.toLocaleString());
+
   const [latestData, setLatestData] = useState(soldData);
 
   useEffect(() => {
@@ -63,16 +76,29 @@ export default function ItemPage({ id, prettyName, soldData }) {
   }, []);
 
   useEffect(() => {
-    if (!id) return;
-    fetch(`${base}/prices/${id}?range=${range}`)
-      .then((res) => res.json())
-      .then(setPriceData);
-      console.log(priceData)
+  if (!id) return;
+  fetch(`${base}/prices/${id}?range=${range}`)
+    .then((res) => res.json())
+    .then((data) => {
+      console.log("Raw price data:", data);
+      const roundedData = data.map((entry) => ({
+        displayTime: formatDate(entry.timestamp),       // for display
+
+        data: {
+          ...entry.data,
+          buyPrice: Math.round(entry.data.buyPrice),
+          sellPrice: Math.round(entry.data.sellPrice),
+        },
+      }));
+      setPriceData(roundedData);
+      console.log("Rounded price data:", roundedData);
+    });
+
+
 
     fetch(`${base}/sold/${id}`)
       .then((res) => res.json())
       .then(setLatestData);
-      console.log(latestData)
   }, [id, range]);
 
   const suggestions = query
@@ -93,6 +119,19 @@ export default function ItemPage({ id, prettyName, soldData }) {
     return () => document.removeEventListener("click", onClickOutside);
   }, []);
 
+const [mayors, setMayors] = useState([]);
+
+useEffect(() => {
+  fetch(`${base}/elections`)
+    .then((res) => res.json())
+    .then((data) => {
+      // Sort the data by timestamp to ensure chronological order
+      const sortedData = data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      setMayors(sortedData);
+    });
+}, []);
+
+
   const calculatePotentialProfit = () => {
     if (
       !latestData ||
@@ -102,11 +141,11 @@ export default function ItemPage({ id, prettyName, soldData }) {
     ) {
       return { maxQty: 0, potentialProfit: 0 };
     }
-    const marketCapQty = Math.floor(latestData.sellMovingWeek * 0.1);
-    const capitalCapQty = Math.floor(budget / latestData.buyPrice);
-    const maxQty = Math.min(marketCapQty, capitalCapQty);
+    const marketCapQty = Math.round(Math.floor(latestData.sellMovingWeek * 0.1));
+    const capitalCapQty = Math.round(Math.floor(budget / latestData.sellPrice));
+    const maxQty = Math.round(Math.min(marketCapQty, capitalCapQty));
     const potentialProfit =
-      (latestData.sellPrice - latestData.buyPrice) * maxQty;
+      Math.round((latestData.buyPrice - latestData.sellPrice) * maxQty);
     return { maxQty, potentialProfit };
   };
 
@@ -115,7 +154,7 @@ export default function ItemPage({ id, prettyName, soldData }) {
   return (
     <>
       <Head>
-        <title>{prettyName.replace(/§[0-9a-fA-F]/g, "")} | Bazaar Tracker</title>
+        <title>{`${prettyName.replace(/§[0-9a-fA-F]/g, "")} | Bazaar Tracker`}</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="p-6 max-w-7xl mx-auto space-y-8">
@@ -150,10 +189,8 @@ export default function ItemPage({ id, prettyName, soldData }) {
           )}
         </div>
 
-        <Link href="/">
-          <a className="inline-block px-3 py-1 rounded bg-gray-200 text-black hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+        <Link href="/" className="inline-block px-3 py-1 rounded bg-gray-200 text-black hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
             ← Back to Home
-          </a>
         </Link>
 
         <h1 className="text-2xl font-bold">
@@ -169,7 +206,7 @@ export default function ItemPage({ id, prettyName, soldData }) {
             id="range"
             value={range}
             onChange={(e) => setRange(e.target.value)}
-            className="border p-2 rounded"
+            className="border p-2 rounded dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
           >
             {ranges.map((r) => (
               <option key={r.value} value={r.value}>
@@ -195,16 +232,46 @@ export default function ItemPage({ id, prettyName, soldData }) {
                     <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="timestamp" hide />
+                <XAxis dataKey="displayTime" />
                 <YAxis />
                 <CartesianGrid strokeDasharray="3 3" />
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+                      ? '#1f2937' // Tailwind dark:bg-gray-800
+                      : '#ffffff',
+                    color: typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+                      ? '#ffffff'
+                      : '#000000',
+                    border: '1px solid #ccc',
+                  }}
+                  labelStyle={{ color: '#888' }}
+                />
+
                 <Legend />
                 <Area type="monotone" dataKey="data.buyPrice" name="Buy Price" stroke="#82ca9d" fill="url(#colorBuy)" />
                 <Area type="monotone" dataKey="data.sellPrice" name="Sell Price" stroke="#8884d8" fill="url(#colorSell)" />
+                
+                {mayors.map((mayor, index) => (
+                  console.log(new Date(mayor.timestamp).getTime()),
+                <ReferenceLine
+                  key={index}
+                  x={formatDate(mayor.timestamp)}
+                  stroke="red"
+                  strokeDasharray="3 3"
+                  label={{
+                    position: 'top',
+                    value: mayor.mayor,
+                    angle: -90,
+                    offset: 10,
+                    fill: 'red',
+                    fontSize: 12,
+                  }}
+                />
+              ))}
               </AreaChart>
             </ResponsiveContainer>
-          </div>
+          </div>  
         </section>
 
         {/* Sold Volume and Profit Estimation */}
@@ -220,11 +287,18 @@ export default function ItemPage({ id, prettyName, soldData }) {
             </label>
             <input
               id="budget"
-              type="number"
-              value={budget}
-              onChange={(e) => setBudget(Number(e.target.value))}
+              type="text"
+              value={budgetInput}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^\d]/g, ""); // remove non-digit chars
+                setBudgetInput(
+                  raw ? Number(raw).toLocaleString() : ""
+                );
+                setBudget(raw ? Number(raw) : 0);
+              }}
               className="p-2 border rounded w-full max-w-sm"
             />
+
             <p>
               Max items to flip: <strong>{maxQty}</strong>
               <br />
