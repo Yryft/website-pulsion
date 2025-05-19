@@ -1,115 +1,206 @@
-// pages/index.js
-import Head from "next/head";
+// pages/items/[id].js
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/router";
 import { getAllItems } from "../../lib/items";
 import { renderNameWithColors } from "../../lib/renderName";
+import {
+  ResponsiveContainer,
+  LineChart, Line,
+  XAxis, YAxis, Tooltip
+} from "recharts";
+import { useEffect, useState, useRef } from "react";
 
-export async function getStaticProps() {
-  const items = await getAllItems();
-
+export async function getServerSideProps({ params }) {
   const base = process.env.API_BASE || "https://pulsion-apiv1.up.railway.app";
-  const metrics = await Promise.all(
-    items.map(async ({ id, name }) => {
-      try {
-        const [soldRes, pricesRes] = await Promise.all([
-          fetch(`${base}/sold/${id}?range=1week`),
-          fetch(`${base}/prices/${id}?range=1week`)
-        ]);
-        if (!soldRes.ok || !pricesRes.ok) return null;
 
-        const soldData     = await soldRes.json();
-        const priceHistory = await pricesRes.json();
-        if (!priceHistory.length) return null;
+  // get the pretty name from your items.json
+  const items = await getAllItems();
+  const item = items.find(i => i.id === params.id);
+  if (!item) return { notFound: true };
 
-        const latestPrice = priceHistory[priceHistory.length - 1].price.sellPrice;
-        const sold        = soldData.sold || 0;
-        return { id, name, sold, latestPrice, revenue: sold * latestPrice };
-      } catch {
-        return null;
-      }
-    })
-  );
+  // fetch full price history (all time)
+  const [pricesRes, soldRes, electionsRes] = await Promise.all([
+    fetch(`${base}/prices/${params.id}?range=all`),
+    fetch(`${base}/sold/${params.id}`),
+    fetch(`${base}/elections?range=all`)
+  ]);
 
-  const topItems = metrics
-    .filter(Boolean)
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 10);
+  const historyRaw = pricesRes.ok ? await pricesRes.json() : [];
+  const soldData   = soldRes.ok   ? await soldRes.json()   : null;
+  const elections  = electionsRes.ok ? await electionsRes.json() : [];
+
+  // remap history to your recharts format
+  const history = historyRaw.map(p => {
+    const tms = new Date(p.timestamp).getTime();
+    const mayor = elections
+      .slice().reverse()
+      .find(e => new Date(e.timestamp).getTime() <= tms);
+
+    return {
+      time: new Date(p.timestamp).toLocaleTimeString(),
+      tms,
+      // show sellPrice over time
+      price: Math.round(p.data.buyPrice),
+      mayor: mayor ? `${mayor.mayor} (${mayor.year})` : null
+    };
+  });
+
+  // election lines remain unchanged
+  const electionLines = elections.map(e => ({
+    tms: new Date(e.timestamp).getTime(),
+    label: `${e.mayor} (${e.year})`
+  }));
 
   return {
-    props: { items, topItems },
-    revalidate: 5,
+    props: {
+      id: item.id,
+      prettyName: item.name,
+      history,
+      soldData,
+      electionLines
+    }
   };
 }
 
-export default function Home({ items = [], topItems = [] }) {
-  const [q, setQ] = useState("");
+export default function ItemPage({ id, prettyName, history, soldData, electionLines }) {
+  const router = useRouter();
 
-  const filtered = items.filter(({ name }) =>
-    name.toLowerCase().includes(q.trim().toLowerCase())
-  );
+  // Autocomplete state (unchanged)
+  const [query, setQuery]     = useState("");
+  const [allItems, setAllItems] = useState([]);
+  const [open, setOpen]       = useState(false);
+  const inputRef              = useRef();
+
+  useEffect(() => {
+    getAllItems().then(setAllItems);
+  }, []);
+
+  const suggestions = query
+    ? allItems
+        .filter(({ name }) =>
+          name.toLowerCase().includes(query.trim().toLowerCase())
+        )
+        .slice(0, 10)
+    : [];
+
+  useEffect(() => {
+    function handler(e) {
+      if (inputRef.current && !inputRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, []);
 
   return (
-    <>
-      <Head>
-        <title>Bazaar Tracker</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
-      <main className="p-8">
-        <h1 className="text-3xl mb-6">Bazaar Tracker</h1>
-
-        {topItems.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-2xl mb-2">Top 10 Most Profitable This Week</h2>
-            <ul className="space-y-2">
-              {topItems.map(({ id, name, revenue, sold, latestPrice }) => (
-                <li key={id} className="flex justify-between">
-                  <Link
-                    href={`/items/${id}`}
-                    className="font-medium hover:underline"
-                  >
-                    {renderNameWithColors(name, id)}
-                  </Link>
-                  <span className="text-right">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Sold: {sold.toLocaleString()} @ {latestPrice.toLocaleString()}
-                    </div>
-                    <div className="font-semibold">
-                      ${revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    </div>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
+    <main className="p-8 max-w-7xl mx-auto space-y-8">
+      {/* Autocomplete */}
+      <div className="relative" ref={inputRef}>
         <input
           type="text"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
+          value={query}
+          onFocus={() => setOpen(true)}
+          onChange={e => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
           placeholder="Search items…"
-          className="w-full mb-6 p-2 border rounded"
+          className="w-full p-2 border rounded"
         />
-
-        <ul className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {filtered.length > 0 ? (
-            filtered.map(({ id, name }) => (
-              <li key={id}>
-                <Link
-                  href={`/items/${id}`}
-                  className="block p-4 border rounded hover:shadow-sm"
-                >
-                  {renderNameWithColors(name, id)}
-                </Link>
+        {open && suggestions.length > 0 && (
+          <ul className="absolute z-10 mt-1 w-full border rounded shadow max-h-60 overflow-auto bg-white">
+            {suggestions.map(({ id, name }) => (
+              <li
+                key={id}
+                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => {
+                  setOpen(false);
+                  router.push(`/items/${id}`);
+                }}
+              >
+                {renderNameWithColors(name, id)}
               </li>
-            ))
-          ) : (
-            <p>No items match “{q}.”</p>
-          )}
-        </ul>
-      </main>
-    </>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Back */}
+      <Link href="/" className="inline-block mb-4 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300">
+        ← Back to Home
+      </Link>
+
+      {/* Title */}
+      <h1 className="text-2xl font-bold">
+        {renderNameWithColors(prettyName, id)}
+      </h1>
+
+      {/* Price Chart */}
+      <section className="w-full overflow-x-auto">
+        <h2 className="text-xl mb-2">Price History</h2>
+        {history.length > 0 ? (
+          <div className="min-w-[1000px] h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={history} margin={{ top: 30, right: 80, left: 60, bottom: 0 }}>
+                <XAxis
+                  dataKey="tms"
+                  type="number"
+                  domain={['auto', 'auto']}
+                  tickFormatter={t => new Date(t).toLocaleTimeString()}
+                />
+                <YAxis
+                  tickFormatter={v => v.toLocaleString()}
+                  allowDataOverflow
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    const { mayor } = payload[0].payload;
+                    const date = new Date(label).toLocaleString();
+                    const price = payload[0].value.toLocaleString();
+                    return (
+                      <div style={{ padding: 8, background: '#fff', border: '1px solid #ccc' }}>
+                        <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
+                          {mayor ? `${mayor} — ${date}` : date}
+                        </div>
+                        <div>Price: {price}</div>
+                      </div>
+                    );
+                  }}
+                />
+                {/** Your historical price line **/}
+                <Line dataKey="price" dot={false} stroke="#8884d8" />
+
+                {/** Election reference lines (optional) **/}
+                {electionLines.map((e, i) => (
+                  <ReferenceLine
+                    key={i}
+                    x={e.tms}
+                    label={<Label position="top" value={e.label} />}
+                    stroke="#FF0000"
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <p>No price history available.</p>
+        )}
+      </section>
+
+      {/* Sold volume */}
+      <section>
+        <h2 className="text-xl mb-2">Sold Volume (latest)</h2>
+        {soldData ? (
+          <p>
+            <strong>{soldData.sellMovingWeek.toLocaleString()}</strong> units sold.{" "}
+            <small>(as of {new Date(soldData.timestamp).toLocaleTimeString()})</small>
+          </p>
+        ) : (
+          <p>No sold-volume data available.</p>
+        )}
+      </section>
+    </main>
   );
 }
