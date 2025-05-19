@@ -66,10 +66,12 @@ export default function ItemPage({ id, prettyName, soldData }) {
     fetch(`/api/prices/${id}?range=${range}`)
       .then((res) => res.json())
       .then(setPriceData);
+      console.log(priceData)
 
     fetch(`/api/sold/${id}`)
       .then((res) => res.json())
       .then(setLatestData);
+      console.log(latestData)
   }, [id, range]);
 
   const suggestions = query
