@@ -72,20 +72,18 @@ export default function Home({ items = [], topItems = [] }) {
           {suggestions.length > 0 && (
             <ul
               ref={suggBox}
-              className="absolute z-10 w-full bg-white border rounded shadow mt-1 max-h-48 overflow-auto"
+              className="absolute z-10 w-full bg-white dark:bg-gray-800 border rounded shadow mt-1 max-h-48 overflow-auto"
             >
               {suggestions.map(({ id, name }) => (
                 <li
                   key={id}
-                  onClick={() => {
-                    setQ("");
-                    window.location.href = `/items/${id}`;
-                  }}
-                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => { setQ(""); window.location.href = `/items/${id}` }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                 >
-                  {name}
+                  {renderNameWithColors(name, id)}
                 </li>
               ))}
+
             </ul>
           )}
         </div>

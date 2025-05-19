@@ -5,8 +5,13 @@ import { getAllItems } from "../../lib/items";
 import { renderNameWithColors } from "../../lib/renderName";
 import {
   ResponsiveContainer,
-  LineChart, Line,
-  XAxis, YAxis, Tooltip
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ReferenceLine,
+  Label
 } from "recharts";
 import { useEffect, useState, useRef } from "react";
 import Head from "next/head";
