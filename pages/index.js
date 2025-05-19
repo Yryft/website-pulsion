@@ -22,7 +22,7 @@ export async function getStaticProps() {
 
   return {
     props: { items, topItems },
-    revalidate: 300,
+    revalidate: 30,
   };
 }
 

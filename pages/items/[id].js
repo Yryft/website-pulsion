@@ -63,12 +63,12 @@ export default function ItemPage({ id, prettyName, soldData }) {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`/api/prices/${id}?range=${range}`)
+    fetch(`${base}/prices/${id}?range=${range}`)
       .then((res) => res.json())
       .then(setPriceData);
       console.log(priceData)
 
-    fetch(`/api/sold/${id}`)
+    fetch(`${base}/sold/${id}`)
       .then((res) => res.json())
       .then(setLatestData);
       console.log(latestData)
