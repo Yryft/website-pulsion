@@ -133,39 +133,47 @@ export default function ItemPage({ id, prettyName, soldData }) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="p-6 max-w-7xl mx-auto space-y-8">
-        {/* Autocomplete */}
-        <div className="relative" ref={inputRef}>
-          <input
-            type="text"
-            value={query}
-            onFocus={() => setOpen(true)}
-            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-            placeholder="Search items…"
-            className="w-full p-2 border rounded bg-white text-black dark:bg-gray-800 dark:text-white"
-          />
-          {open && suggestions.length > 0 && (
-            <ul className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border rounded shadow max-h-60 overflow-auto">
-              {suggestions.map(({ id: iid, name }) => (
-                <li
-                  key={iid}
-                  className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                  onClick={() => {
-                    setOpen(false);
-                    router.push(`/items/${iid}`);
-                  }}
-                >
-                  {renderNameWithColors(name, iid)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        
+      <main className="p-6 max-w-screen-xxl mx-auto space-y-8">
+        {/* Back + Search */}
+        <div className="flex items-center space-x-2">
+          {/* 1) Back button */}
+          <Link
+            href="/"
+            className="inline-block px-3 py-1 rounded bg-blue-300 text-white dark:bg-gray-700"
+          >
+            ← Back to Home
+          </Link>
 
-        <Link href="/" className="inline-block px-3 py-1 rounded bg-blue-300 text-white dark:bg-gray-700">
-          ← Back to Home
-        </Link>
+          {/* 2) Autocomplete */}
+          <div className="relative flex-1" ref={inputRef}>
+            <input
+              type="text"
+              value={query}
+              onFocus={() => setOpen(true)}
+              onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+              placeholder="Search items…"
+              className="w-full p-2 border rounded bg-white text-black dark:bg-gray-800 dark:text-white"
+            />
+            {open && suggestions.length > 0 && (
+              <ul className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border rounded shadow max-h-60 overflow-auto">
+                {suggestions.map(({ id: iid, name }) => (
+                  <li
+                    key={iid}
+                    className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                    onClick={() => {
+                      setOpen(false);
+                      router.push(`/items/${iid}`);
+                    }}
+                  >
+                    {renderNameWithColors(name, iid)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+
         <h1
         className="
           text-2xl
@@ -176,9 +184,15 @@ export default function ItemPage({ id, prettyName, soldData }) {
         >
           {renderNameWithColors(prettyName, id)}
         </h1>
-        {/* Range Select */}
-        <div className="flex flex-wrap gap-4 items-center">
-          <label htmlFor="range" className="font-semibold text-black dark:text-white">Select range</label>
+
+        {/* Chart header + range picker */}
+        <div className="flex flex-col sm:flex-row items-center justify-center space-x-4 space-y-2 sm:space-y-0">
+          {/* 1) Title */}
+          <h2 className="text-xl text-black dark:text-white">
+            Buy &amp; Sell Price History
+          </h2>
+
+          {/* 2) Range select */}
           <div className="relative">
             <select
               id="range"
@@ -199,40 +213,55 @@ export default function ItemPage({ id, prettyName, soldData }) {
           </div>
         </div>
 
-        {/* Price Chart */}
-        <section>
-          <h2 className="text-xl mb-2 text-black dark:text-white">Buy & Sell Price History</h2>
-          <div className="overflow-x-auto">
-            <div className="min-w-[600px] h-[300px]">
-              <PriceChart data={priceData} annotations={mayors} />
-            </div>
+        {/* then your scrollable chart follows */}
+        <div className="overflow-x-auto">
+          <div className="min-w-[600px] h-[300px]">
+            <PriceChart data={priceData} annotations={mayors} />
           </div>
+        </div>
 
-        </section>
 
         {/* Volume & Profit */}
         {latestData && (
-          <section className="space-y-2">
-            <h2 className="text-xl text-black dark:text-white">Sold Volume</h2>
-            <p className="text-black dark:text-white">
-              <strong>{latestData.sellMovingWeek.toLocaleString()}</strong> units sold (last 7d).
-            </p>
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* 1) Sold Volume */}
+            <div className="space-y-2 p-4 border rounded border-blue-300 bg-blue-200 dark:bg-gray-800 dark:border-gray-700">
+              <h2 className="text-xl text-black dark:text-white">Sold Volume</h2>
+              <p className="text-black dark:text-white">
+                <strong>{latestData.sellMovingWeek.toLocaleString()}</strong> units sold (last 7d).
+              </p>
+            </div>
 
-            <label htmlFor="budget" className="block font-semibold mt-4 text-black dark:text-white">Your Budget (coins)</label>
-            <input
-              id="budget"
-              type="text"
-              value={budgetInput}
-              onChange={onBudgetChange}
-              className="p-2 border rounded w-full max-w-sm"
-            />
+            {/* 2) Budget Input */}
+            <div className="space-y-2 p-4 border rounded border-blue-300 bg-blue-200 dark:bg-gray-800 dark:border-gray-700">
+              <label 
+                htmlFor="budget" 
+                className="block font-semibold text-black dark:text-white"
+              >
+                Your Budget (coins)
+              </label>
+              <input
+                id="budget"
+                type="text"
+                value={budgetInput}
+                onChange={onBudgetChange}
+                className="p-2 border rounded w-full"
+              />
+            </div>
 
-            <p className="text-black dark:text-white">
-              Max items to flip: <strong>{maxQty}</strong><br />
-              Potential profit: <strong>{potentialProfit.toLocaleString()} coins</strong>
-            </p>
+            {/* 3) Calculated Results */}
+            <div className="space-y-2 p-4 border rounded border-blue-300 bg-blue-200 dark:bg-gray-800 dark:border-gray-700">
+              <h2 className="text-xl text-black dark:text-white">Flip Analysis</h2>
+              <p className="text-black dark:text-white">
+                Max items to flip: <strong>{maxQty}</strong>
+              </p>
+              <p className="text-black dark:text-white">
+                Potential profit: <strong>{potentialProfit.toLocaleString()} coins</strong>
+              </p>
+            </div>
           </section>
         )}
+
       </main>
     </>
   );

@@ -60,7 +60,7 @@ export default function Home({ items = [], topItems = [] }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="px-4 py-6 max-w-screen-lg mx-auto">
+      <main className="px-4 py-6 max-w-screen-xxl mx-auto">
         <h1 className="text-3xl mb-6 font-bold text-center text-black dark:text-white">
           Bazaar Tracker
         </h1>

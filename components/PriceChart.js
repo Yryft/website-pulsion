@@ -10,6 +10,25 @@ import {
   ReferenceLine
 } from 'recharts';
 
+// 1) Create a small functional component:
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null;
+
+  return (
+    <div className="bg-gray-200 dark:bg-gray-700 border border-gray-500 dark:border-gray-600 text-gray-800 dark:text-gray-100 p-2 rounded-md">
+      <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">{label}</p>
+      {payload.map((entry) => (
+        <p key={entry.name} className="text-sm">
+          <span className="font-semibold">{entry.name}:</span>{' '}
+          {typeof entry.value === 'number'
+            ? entry.value.toLocaleString()
+            : entry.value}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export function PriceChart({ data, annotations }) {
   const tooMany = data.length > 50;
 
@@ -45,24 +64,7 @@ export function PriceChart({ data, annotations }) {
 
         <CartesianGrid strokeDasharray="3 3" stroke="#999" strokeOpacity={0.3} />
 
-        <Tooltip
-          contentStyle={{
-            backgroundColor:
-              typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? '#1f2937'
-                : '#ffffff',
-            color:
-              typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? '#ffffff'
-                : '#000000',
-            border: '1px solid #ccc',
-          }}
-          formatter={(value, name) => [
-            typeof value === 'number' ? value.toLocaleString() : value,
-            name
-          ]}
-          labelStyle={{ color: '#888' }}
-        />
+        <Tooltip content={<CustomTooltip />} />
 
         <Legend/>
 

@@ -1,19 +1,35 @@
 import { useState } from 'react';
 
 export function useHumanNumber(initial = 0) {
-  // raw string shown in the input, numeric value parsed
+  // raw is the exact string in the input, value is the numeric interpretation
   const [raw, setRaw] = useState(initial.toLocaleString());
   const [value, setValue] = useState(initial);
 
-  // parse “10k”, “1.5m”, “2b”, or plain numbers
   const parse = (input) => {
+    // 1) remove commas & trim
     const cleaned = input.toLowerCase().replace(/,/g, '').trim();
-    const m = cleaned.match(/^([\d.]+)\s*([kmb]?)$/);
-    if (!m) return { display: input, number: 0 };
-    const n = parseFloat(m[1]);
-    const mult = { k: 1e3, m: 1e6, b: 1e9 }[m[2]] || 1;
-    const num = n * mult;
-    return { display: num.toLocaleString(), number: num };
+    // 2) capture digits+dot, optional suffix k/m/b
+    const m = cleaned.match(/^([\d.]+)\s*([kmb])?$/);
+    if (!m) {
+      // not a valid pattern → leave raw alone, zero out
+      return { display: input, number: 0 };
+    }
+
+    const numberPart = parseFloat(m[1]);
+    const suffix = m[2];
+    // choose multiplier if suffix is present, else 1
+    const multiplier = suffix
+      ? { k: 1e3, m: 1e6, b: 1e9, }[suffix]
+      : 1;
+    const num = numberPart * multiplier;
+
+    // If the user used a suffix, we’ll normalize on display (e.g. “1.5m” → “1,500,000”)
+    // If no suffix, leave the raw string as‐typed (so typing “10000000” stays “10000000”)
+    const display = suffix
+      ? num.toLocaleString()
+      : m[1];  
+
+    return { display, number: num };
   };
 
   const onChange = (e) => {
