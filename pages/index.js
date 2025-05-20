@@ -39,19 +39,12 @@ export default function Home({ items = [], topItems = [] }) {
     }
     const term = q.toLowerCase();
     setSuggestions(
-      items.filter(({ name }) => name.toLowerCase().includes(term)).slice(0, 10)
+      items
+        .filter(({ name }) => name.toLowerCase().includes(term))
+        .slice(0, 10)
     );
   }, [q, items]);
 
-  // filter top‐10 by query
-  const filteredTop = topItems.filter(item => {
-    const nameObj = items.find(i => i.id === item.item_id);
-    const pretty = nameObj ? nameObj.name : item.item_id;
-    return (
-      item.item_id.toLowerCase().includes(q.toLowerCase()) ||
-      pretty.toLowerCase().includes(q.toLowerCase())
-    );
-  });
 
   return (
     <>
@@ -72,7 +65,7 @@ export default function Home({ items = [], topItems = [] }) {
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder="Search items…"
-            className="w-full p-2 border rounded bg-white dark:bg-gray-800 dark:text-white"
+            className="w-full p-2 border rounded text-black bg-blue-200 dark:bg-gray-800 dark:text-white"
           />
           {suggestions.length > 0 && (
             <ul
@@ -100,9 +93,9 @@ export default function Home({ items = [], topItems = [] }) {
           <h2 className="text-2xl mb-2 text-black dark:text-white">
             Top 10 Return on Investment Items
           </h2>
-          {filteredTop.length > 0 ? (
+          {topItems.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {filteredTop.map(
+              {topItems.map(
                 ({
                   item_id,
                   sell_price,

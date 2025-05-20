@@ -64,7 +64,7 @@ export default function MiniChart({ itemId }) {
   if (!data) return <div className="text-sm text-gray-500 dark:text-gray-400">No data</div>;
 
   return (
-    <div className="h-full w-full bg-white dark:bg-gray-800 rounded">
+    <div className="h-full w-full bg-blue-100 dark:bg-gray-800 rounded">
       <Line
         data={data}
         options={{

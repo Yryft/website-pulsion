@@ -96,7 +96,7 @@ export function PriceChart({ data, annotations }) {
               position: 'bottom',
               offset: 25,
               fontSize: 10,
-              fill: 'rgba(232, 232, 232, 0.5)'
+              fill: 'rgba(124, 32, 32, 0.63)'
             }}
           />
         ))}

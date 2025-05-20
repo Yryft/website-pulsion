@@ -63,6 +63,9 @@
   "react-dom": "^19.0.0",
   
     
+  "react-number-format": "^5.4.4",
+  
+    
   "recharts": "^2.15.3"
   
   },
