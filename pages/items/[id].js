@@ -129,6 +129,7 @@ export default function ItemPage({ id, prettyName, soldData }) {
     <>
       <Head>
         <title>{prettyName.replace(/§[0-9a-fA-F]/g, '')} | Bazaar Tracker</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 

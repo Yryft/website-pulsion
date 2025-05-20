@@ -90,11 +90,11 @@ export function PriceChart({ data, annotations }) {
             strokeWidth={1}
             strokeDasharray="3 3"
             label={{
-              value: a.mayor,
+              value: `${a.mayor}-${a.year}`,
               position: 'bottom',
-              offset: +20,
+              offset: 25,
               fontSize: 10,
-              fill: 'rgba(255,0,0,0.5)'
+              fill: 'rgba(232, 232, 232, 0.5)'
             }}
           />
         ))}
