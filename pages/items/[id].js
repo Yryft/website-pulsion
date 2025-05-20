@@ -153,7 +153,7 @@ export default function ItemPage({ id, prettyName, soldData }) {
         <div className="flex items-center space-x-2">
           <Link
             href="/"
-            className="px-3 py-1 rounded border border-blue-400 bg-blue-200 text-black dark:bg-gray-700 dark:text-white"
+            className="px-3 py-1 rounded border border-blue-400 dark:border-gray-600 bg-blue-200 text-black dark:bg-gray-800 dark:text-white"
           >
             ← Back to Home
           </Link>
