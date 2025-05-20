@@ -52,7 +52,7 @@ def jsons():
           item_id = f"ENCHANTMENT_{modified_id}"
 
           # Human-readable name
-          name = item_id.replace('_', ' ').replace('ENCHANTMENT ', '').title()
+          name = item_id.replace('_', ' ').title()
 
           # Remove 'Ultimate' for all except ULTIMATE_WISE
           if 'ULTIMATE_WISE' not in item_id:

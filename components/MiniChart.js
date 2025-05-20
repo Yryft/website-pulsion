@@ -30,29 +30,30 @@ export default function MiniChart({ itemId }) {
       .then(r => r.json())
       .then(rows => {
         const labels = rows.map(r => new Date(r.timestamp).toLocaleTimeString());
-        const vals   = rows.map(r => r.data.sellPrice);
+        const sellPrices   = rows.map(r => Math.round(r.data.sellPrice));
+        const buyPrices    = rows.map(r => Math.round(r.data.buyPrice));
         setData({
           labels,
           datasets: [{
             label: 'Sell Price',
-            data: vals,
+            data: sellPrices,
             fill: false,
             tension: 0.4,           // <— smooth bezier curves
-            borderWidth: 2,         // a bit thicker for clarity
+            borderWidth: 3,         // a bit thicker for clarity
             borderColor: 'rgb(75,192,192)',
-            pointRadius: 0,         // hide the individual dots
-            pointHoverRadius: 3,    // but show a dot on hover
+            pointRadius: 0.05,         // hide the individual dots
+            pointHoverRadius: 4,  // but show a dot on hover
             pointBackgroundColor: 'rgb(75,192,192)'
           },
           {
             label: 'Buy Price',
-            data: rows.map(r => r.data.buyPrice),
+            data: buyPrices,
             fill: false,
             tension: 0.4,
-            borderWidth: 2,
+            borderWidth: 3,
             borderColor: 'rgb(255,99,132)',       // contrasting red
-            pointRadius: 0,
-            pointHoverRadius: 3,
+            pointRadius: 0.05,
+            pointHoverRadius: 4,
             pointBackgroundColor: 'rgb(255,99,132)' // same for dots
           }]
         });
@@ -60,10 +61,10 @@ export default function MiniChart({ itemId }) {
       .catch(() => setData(null));
   }, [itemId]);
 
-  if (!data) return <div className="text-sm text-gray-500">No data</div>;
+  if (!data) return <div className="text-sm text-gray-500 dark:text-gray-400">No data</div>;
 
   return (
-    <div className="h-24 w-full bg-white dark:bg-gray-800 rounded">
+    <div className="h-full w-full bg-white dark:bg-gray-800 rounded">
       <Line
         data={data}
         options={{
@@ -76,7 +77,7 @@ export default function MiniChart({ itemId }) {
                 },
                 boxWidth: 2,     // smaller color box
                 boxHeight: 2,    // match boxWidth if you like
-                padding: 12        // space between legend items
+                padding: 6       // space between legend items
               }
             }
           },

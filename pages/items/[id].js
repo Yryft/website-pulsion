@@ -1,24 +1,13 @@
-// pages/items/[id].js
-import { useRouter } from "next/router";
-import Head from "next/head";
-import { useEffect, useState, useRef } from "react";
-import Link from "next/link";
-import { getAllItems } from "../../lib/items";
-import { renderNameWithColors } from "../../lib/renderName";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ReferenceLine
-} from "recharts";
+import { useRouter } from 'next/router';
+import Head from 'next/head';
+import Link from 'next/link';
+import { useEffect, useState, useRef } from 'react';
+import { getAllItems } from '../../lib/items';
+import { renderNameWithColors } from '../../lib/renderName';
+import { useHumanNumber } from '../../hooks/useHumanNumber';
+import { PriceChart } from '../../components/PriceChart';
 
-
-const base = process.env.NEXT_PUBLIC_API_BASE || "https://pulsion-apiv1.up.railway.app";
+const base = process.env.NEXT_PUBLIC_API_BASE || 'https://pulsion-apiv1.up.railway.app';
 
 export async function getServerSideProps({ params }) {
   const items = await getAllItems();
@@ -38,289 +27,204 @@ export async function getServerSideProps({ params }) {
 }
 
 const ranges = [
-  { label: "Last 2 Hours", value: "latest" },
-  { label: "1 Day", value: "1day" },
-  { label: "1 Week", value: "1week" },
-  { label: "2 Months", value: "2months" },
-  { label: "6 Months", value: "6months" },
-  { label: "All Time", value: "all" },
+  { label: 'Last 2 Hours', value: 'latest' },
+  { label: '1 Day', value: '1day' },
+  { label: '1 Week', value: '1week' },
+  { label: '2 Months', value: '2months' },
+  { label: '6 Months', value: '6months' },
+  { label: 'All Time', value: 'all' },
 ];
 
 function formatDate(ts) {
-  const date = new Date(ts);
-  return date.getDate().toString().padStart(2, '0') + " " +
-         date.toLocaleString('en-US', { month: 'short' }) + " " +
-         date.getFullYear() + ", " +
-         String(date.getHours()).padStart(2, '0') + ":" +
-         String(date.getMinutes()).padStart(2, '0');
+  const d = new Date(ts);
+  return (
+    d.getDate().toString().padStart(2, '0') + ' ' +
+    d.toLocaleString('en-US', { month: 'short' }) + ' ' +
+    d.getFullYear() + ', ' +
+    String(d.getHours()).padStart(2, '0') + ':' +
+    String(d.getMinutes()).padStart(2, '0')
+  );
 }
 
 export default function ItemPage({ id, prettyName, soldData }) {
   const router = useRouter();
-
-  // Autocomplete
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [allItems, setAllItems] = useState([]);
   const [open, setOpen] = useState(false);
   const inputRef = useRef();
 
   const [priceData, setPriceData] = useState([]);
-  const [range, setRange] = useState("1week");
-  const [budget, setBudget] = useState(100000000);
-  const [budgetInput, setBudgetInput] = useState(budget.toLocaleString());
-
+  const [range, setRange] = useState('1week');
+  const { raw: budgetInput, value: budget, onChange: onBudgetChange } = useHumanNumber(100000000);
   const [latestData, setLatestData] = useState(soldData);
+  const [mayors, setMayors] = useState([]);
 
+  // fetch items for autocomplete
   useEffect(() => {
     getAllItems().then(setAllItems);
   }, []);
 
+  // fetch price & sold data on id or range change
   useEffect(() => {
-  if (!id) return;
-  fetch(`${base}/prices/${id}?range=${range}`)
-    .then((res) => res.json())
-    .then((data) => {
-      console.log("Raw price data:", data);
-      const roundedData = data.map((entry) => ({
-        displayTime: formatDate(entry.timestamp),       // for display
-
-        data: {
-          ...entry.data,
-          buyPrice: Math.round(entry.data.buyPrice),
-          sellPrice: Math.round(entry.data.sellPrice),
-        },
-      }));
-      setPriceData(roundedData);
-      console.log("Rounded price data:", roundedData);
-    });
-
-
+    if (!id) return;
+    fetch(`${base}/prices/${id}?range=${range}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const rounded = data.map((e) => ({
+          displayTime: formatDate(e.timestamp),
+          data: {
+            buyPrice: Math.round(e.data.buyPrice),
+            sellPrice: Math.round(e.data.sellPrice),
+          },
+        }));
+        setPriceData(rounded);
+      });
 
     fetch(`${base}/sold/${id}`)
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then(setLatestData);
   }, [id, range]);
 
-  const suggestions = query
-    ? allItems
-        .filter(({ name }) =>
-          name.toLowerCase().includes(query.trim().toLowerCase())
-        )
-        .slice(0, 10)
-    : [];
-
+  // fetch mayor annotations once
   useEffect(() => {
-    function onClickOutside(e) {
+    fetch(`${base}/elections`)
+      .then((r) => r.json())
+      .then((data) =>
+        setMayors(data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+          .map((e) => ({ ...e, displayTime: formatDate(e.timestamp) }))
+        )
+      );
+  }, []);
+
+  // close autocomplete when clicking outside
+  useEffect(() => {
+    function handle(e) {
       if (inputRef.current && !inputRef.current.contains(e.target)) {
         setOpen(false);
       }
     }
-    document.addEventListener("click", onClickOutside);
-    return () => document.removeEventListener("click", onClickOutside);
+    document.addEventListener('click', handle);
+    return () => document.removeEventListener('click', handle);
   }, []);
 
-const [mayors, setMayors] = useState([]);
+  const suggestions = query
+    ? allItems
+        .filter((i) => i.name.toLowerCase().includes(query.trim().toLowerCase()))
+        .slice(0, 10)
+    : [];
 
-useEffect(() => {
-  fetch(`${base}/elections`)
-    .then((res) => res.json())
-    .then((data) => {
-      // Sort the data by timestamp to ensure chronological order
-      const sortedData = data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      setMayors(sortedData);
-    });
-}, []);
-
-
-  const calculatePotentialProfit = () => {
-    if (
-      !latestData ||
-      !latestData.sellMovingWeek ||
-      !latestData.buyPrice ||
-      !latestData.sellPrice
-    ) {
+  // profit calculation
+  const calc = () => {
+    if (!latestData?.sellMovingWeek || !latestData.buyPrice || !latestData.sellPrice)
       return { maxQty: 0, potentialProfit: 0 };
-    }
-    const marketCapQty = Math.round(Math.floor(latestData.sellMovingWeek * 0.1));
-    const capitalCapQty = Math.round(Math.floor(budget / latestData.sellPrice));
-    const maxQty = Math.round(Math.min(marketCapQty, capitalCapQty));
-    const potentialProfit =
-      Math.round((latestData.buyPrice - latestData.sellPrice) * maxQty);
-    return { maxQty, potentialProfit };
+    const marketCap = Math.round(latestData.sellMovingWeek * 0.1);
+    const capitalCap = Math.floor(budget / latestData.sellPrice);
+    const maxQty = Math.min(marketCap, capitalCap);
+    const profit = Math.round((latestData.buyPrice - latestData.sellPrice) * maxQty);
+    return { maxQty, potentialProfit: profit };
   };
-
-  const { maxQty, potentialProfit } = calculatePotentialProfit();
+  const { maxQty, potentialProfit } = calc();
 
   return (
     <>
       <Head>
-        <title>{`${prettyName.replace(/§[0-9a-fA-F]/g, "")} | Bazaar Tracker`}</title>
+        <title>{prettyName.replace(/§[0-9a-fA-F]/g, '')} | Bazaar Tracker</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
+
       <main className="p-6 max-w-7xl mx-auto space-y-8">
-        {/* Autocomplete Search */}
+        {/* Autocomplete */}
         <div className="relative" ref={inputRef}>
           <input
             type="text"
             value={query}
             onFocus={() => setOpen(true)}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOpen(true);
-            }}
+            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
             placeholder="Search items…"
-            className="w-full p-2 border rounded bg-white text-black placeholder-gray-500 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
+            className="w-full p-2 border rounded bg-white text-black dark:bg-gray-800 dark:text-white"
           />
           {open && suggestions.length > 0 && (
-            <ul className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow max-h-60 overflow-auto">
-              {suggestions.map(({ id, name }) => (
+            <ul className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border rounded shadow max-h-60 overflow-auto">
+              {suggestions.map(({ id: iid, name }) => (
                 <li
-                  key={id}
+                  key={iid}
                   className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                   onClick={() => {
                     setOpen(false);
-                    router.push(`/items/${id}`);
+                    router.push(`/items/${iid}`);
                   }}
                 >
-                  {renderNameWithColors(name, id)}
+                  {renderNameWithColors(name, iid)}
                 </li>
               ))}
             </ul>
           )}
         </div>
+        
 
-        <Link href="/" className="inline-block px-3 py-1 rounded bg-gray-200 text-black hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-            ← Back to Home
+        <Link href="/" className="inline-block px-3 py-1 rounded bg-blue-300 text-white dark:bg-gray-700">
+          ← Back to Home
         </Link>
-
-        <h1 className="text-2xl font-bold">
+        <h1
+        className="
+          text-2xl
+          font-bold
+          text-center     /* center it horizontally */
+          mt-8            /* add some space above */
+        "
+        >
           {renderNameWithColors(prettyName, id)}
         </h1>
-
         {/* Range Select */}
         <div className="flex gap-4 items-center">
-          <label htmlFor="range" className="font-semibold">
-            Select range
-          </label>
-
+          <label htmlFor="range" className="font-semibold text-black dark:text-white">Select range</label>
           <div className="relative">
             <select
               id="range"
               value={range}
               onChange={(e) => setRange(e.target.value)}
-              className="appearance-none border p-2 rounded pr-8
-                        dark:bg-gray-800 dark:text-white dark:placeholder-gray-400
-                        border-gray-300 dark:border-gray-600"
+              className="appearance-none border p-2 rounded pr-8 dark:bg-gray-800 dark:text-white"
             >
               {ranges.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
+                <option key={r.value} value={r.value}>{r.label}</option>
               ))}
             </select>
-
-            {/* Custom arrow */}
-            <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-700 dark:text-gray-300">
-              <svg
-                className="w-4 h-4"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </div>
         </div>
 
-
         {/* Price Chart */}
-        <section className="w-full overflow-x-auto">
-          <h2 className="text-xl mb-2">Buy & Sell Price History</h2>
+        <section>
+          <h2 className="text-xl mb-2 text-black dark:text-white">Buy & Sell Price History</h2>
           <div className="min-w-[1000px] h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={priceData} margin={{ top: 30, right: 60, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorBuy" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorSell" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="displayTime" />
-                <YAxis />
-                <CartesianGrid strokeDasharray="3 3" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-                      ? '#1f2937' // Tailwind dark:bg-gray-800
-                      : '#ffffff',
-                    color: typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-                      ? '#ffffff'
-                      : '#000000',
-                    border: '1px solid #ccc',
-                  }}
-                  labelStyle={{ color: '#888' }}
-                />
-
-                <Legend />
-                <Area type="monotone" dataKey="data.buyPrice" name="Buy Price" stroke="#82ca9d" fill="url(#colorBuy)" />
-                <Area type="monotone" dataKey="data.sellPrice" name="Sell Price" stroke="#8884d8" fill="url(#colorSell)" />
-                
-                {mayors.map((mayor, index) => (
-                <ReferenceLine
-                  key={index}
-                  x={formatDate(mayor.timestamp)}
-                  stroke="red"
-                  strokeDasharray="3 3"
-                  label={{
-                    position: 'top',
-                    value: mayor.mayor,
-                    angle: -90,
-                    offset: 10,
-                    fill: 'red',
-                    fontSize: 12,
-                  }}
-                />
-              ))}
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>  
+            <PriceChart data={priceData} annotations={mayors} />
+          </div>
         </section>
 
-        {/* Sold Volume and Profit Estimation */}
+        {/* Volume & Profit */}
         {latestData && (
           <section className="space-y-2">
-            <h2 className="text-xl">Sold Volume</h2>
-            <p>
+            <h2 className="text-xl text-black dark:text-white">Sold Volume</h2>
+            <p className="text-black dark:text-white">
               <strong>{latestData.sellMovingWeek.toLocaleString()}</strong> units sold (last 7d).
             </p>
 
-            <label htmlFor="budget" className="block font-semibold mt-4">
-              Your Budget (coins)
-            </label>
+            <label htmlFor="budget" className="block font-semibold mt-4 text-black dark:text-white">Your Budget (coins)</label>
             <input
               id="budget"
               type="text"
               value={budgetInput}
-              onChange={(e) => {
-                const raw = e.target.value.replace(/[^\d]/g, ""); // remove non-digit chars
-                setBudgetInput(
-                  raw ? Number(raw).toLocaleString() : ""
-                );
-                setBudget(raw ? Number(raw) : 0);
-              }}
+              onChange={onBudgetChange}
               className="p-2 border rounded w-full max-w-sm"
             />
 
-            <p>
-              Max items to flip: <strong>{maxQty}</strong>
-              <br />
+            <p className="text-black dark:text-white">
+              Max items to flip: <strong>{maxQty}</strong><br />
               Potential profit: <strong>{potentialProfit.toLocaleString()} coins</strong>
             </p>
           </section>

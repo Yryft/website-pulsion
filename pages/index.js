@@ -57,10 +57,13 @@ export default function Home({ items = [], topItems = [] }) {
     <>
       <Head>
         <title>Bazaar Tracker</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="p-8">
-        <h1 className="text-3xl mb-6">Bazaar Tracker</h1>
+      <main className="px-4 py-6 max-w-screen-lg mx-auto">
+        <h1 className="text-3xl mb-6 font-bold text-center text-black dark:text-white">
+          Bazaar Tracker
+        </h1>
 
         {/* Autocomplete */}
         <div className="relative mb-6">
@@ -94,9 +97,11 @@ export default function Home({ items = [], topItems = [] }) {
 
         {/* Top 10 Profitable */}
         <section className="mb-8">
-          <h2 className="text-2xl mb-2">Top 10 by ROI This Week</h2>
+          <h2 className="text-2xl mb-2 text-black dark:text-white">
+            Top 10 Return on Investment Items
+          </h2>
           {filteredTop.length > 0 ? (
-            <ul className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {filteredTop.map(
                 ({
                   item_id,
@@ -111,28 +116,42 @@ export default function Home({ items = [], topItems = [] }) {
                   const nameObj = items.find(i => i.id === item_id);
                   const pretty = nameObj ? nameObj.name : item_id;
                   return (
-                    <li key={item_id} className="border p-4 rounded">
-                      <Link href={`/items/${item_id}`} className="font-semibold hover:underline">
+                    <div
+                      key={item_id}
+                      className="border p-4 rounded border-blue-500 dark:border-slate-600 bg-blue-200 dark:bg-gray-800"
+                    >
+                      <Link
+                        href={`/items/${item_id}`}
+                        className="block text-center font-semibold underline decoration-transparent hover:decoration-black dark:hover:decoration-white"
+                      >
                         {renderNameWithColors(pretty, item_id)}
                       </Link>
+
                       <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        Sell price: <i><b>{Math.round(sell_price).toLocaleString()}</b></i> / Buy price: <i><b>{Math.round(buy_price).toLocaleString()}</b></i>
+                        <p>
+                          Sell price: <i><b>{Math.round(sell_price).toLocaleString()}</b></i>
+                        </p>
+                        <p>
+                          Buy price: <i><b>{Math.round(buy_price).toLocaleString()}</b></i>
+                        </p>
                       </div>
                       <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                         Weekly Vol: <i><b>{weekly_volume.toLocaleString()}</b></i>
                       </div>
-                      <div className="mt-2 font-bold">
-                        Profit: {profit_estimate.toLocaleString(undefined, { maximumFractionDigits: 0 })}{" "}
-                        (<span className="text-green-600 dark:text-green-400">{(roi*100).toFixed(1)}%</span>)
+                      <div className="mt-2 font-bold text-black dark:text-white">
+                        R.O.I:
+                        (<span className="text-green-600 dark:text-green-400">
+                          {(roi * 100).toFixed(1)}%
+                        </span>)
                       </div>
                       <div className="mt-4">
                         <MiniChart itemId={item_id} />
                       </div>
-                    </li>
+                    </div>
                   );
                 }
               )}
-            </ul>
+            </div>
           ) : (
             <p>No matching top items.</p>
           )}
