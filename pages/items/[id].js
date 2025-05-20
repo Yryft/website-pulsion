@@ -176,7 +176,7 @@ export default function ItemPage({ id, prettyName, soldData }) {
           {renderNameWithColors(prettyName, id)}
         </h1>
         {/* Range Select */}
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-wrap gap-4 items-center">
           <label htmlFor="range" className="font-semibold text-black dark:text-white">Select range</label>
           <div className="relative">
             <select
@@ -201,9 +201,12 @@ export default function ItemPage({ id, prettyName, soldData }) {
         {/* Price Chart */}
         <section>
           <h2 className="text-xl mb-2 text-black dark:text-white">Buy & Sell Price History</h2>
-          <div className="min-w-[1000px] h-[300px]">
-            <PriceChart data={priceData} annotations={mayors} />
+          <div className="overflow-x-auto">
+            <div className="min-w-[600px] h-[300px]">
+              <PriceChart data={priceData} annotations={mayors} />
+            </div>
           </div>
+
         </section>
 
         {/* Volume & Profit */}
